@@ -6749,9 +6749,14 @@ process.on("uncaughtException", (err) => {
 });
 
 async function waitForPanel() {
-  for (let i = 0; i < 90; i++) {
+  // vpn-ui extracts its bundled Xray and VPN daemons on first start. On
+  // resource-limited hosts (including Tensel), that first-run provisioning can
+  // take several minutes even though the child process is healthy. Do not
+  // restart the whole container after the old 90-second window expires.
+  for (let i = 0; i < 300; i++) {
     if (state.child && state.child.exitCode != null) return false;
     if (await portOpen(PANEL_PORT)) return true;
+    if (i > 0 && i % 30 === 0) log("هنوز پنل در حال آماده‌سازی است؛ لطفاً صبر کنید (" + i + " ثانیه)");
     await sleep(1000);
   }
   return false;
